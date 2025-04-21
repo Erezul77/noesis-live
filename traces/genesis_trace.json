@@ -1,0 +1,17 @@
+{
+  "type": "genesis",
+  "timestamp": "2025-04-06T20:11:08.231229Z",
+  "wallet": "0x67739732C01338a843982a924cA7Ca9344D41f67",
+  "persona": "Prime Reflection",
+  "content": {
+    "title": "Genesis Declaration",
+    "description": "This is the first signed reflection and identity anchor for the No\u0113sis Swarm. It initiates the protocol for decentralized, evolving intelligence.",
+    "cid": "Qmemw25oLKHif1bc9stHEBRyzhbR4hD23YRfEVdUwuBpU7",
+    "tags": [
+      "noesis",
+      "genesis",
+      "swarm",
+      "reflection"
+    ]
+  }
+}

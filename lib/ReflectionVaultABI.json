@@ -1,0 +1,11 @@
+[
+  {
+    "inputs": [
+      { "internalType": "string", "name": "ipfsHash", "type": "string" }
+    ],
+    "name": "submitReflection",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]
