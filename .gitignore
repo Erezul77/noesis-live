@@ -6,3 +6,4 @@ dist/
 .env
 cli/.env
 contracts/.env
+.env.local
