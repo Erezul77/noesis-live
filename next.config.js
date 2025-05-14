@@ -1,7 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  output: 'standalone',
-};
+  output: 'export',
+  trailingSlash: true, // important
+  rewrites: async () => [
+    {
+      source: '/launch',
+      destination: '/launch/index.html',
+    },
+  ],
+}
 
-module.exports = nextConfig;
+module.exports = nextConfig

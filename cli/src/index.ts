@@ -1,221 +1,79 @@
-// src/index.ts
-import fs from "fs";
-import path from "path";
-import os from "os";
-import readline from "readline";
-import { Command } from "commander";
-import { exec } from "child_process";
-import { ethers } from "ethers";
-import dotenv from "dotenv";
+#!/usr/bin/env ts-node
 
-dotenv.config();
+import prompts from 'prompts'
+import dotenv from 'dotenv'
+import { writeFileSync } from 'fs'
+import { ethers } from 'ethers'
+import { execSync } from 'child_process'
+import { randomUUID } from 'crypto'
 
-const program = new Command();
-const noesisDir = path.join(os.homedir(), ".noesis");
-const configPath = path.join(noesisDir, "node.json");
-const tracesDir = path.join("C:", "Noesis", "traces");
+dotenv.config()
 
-program
-  .name("noesis")
-  .description("Noēsis CLI - Decentralized intelligence node")
-  .version("0.1.0");
+const personas = ['The Seer', 'The Oracle', 'The Architect', 'The Wanderer']
 
-program
-  .command("init")
-  .description("Initialize your local Noēsis node")
-  .action(() => {
-    if (!fs.existsSync(noesisDir)) {
-      fs.mkdirSync(noesisDir);
-    }
+async function main() {
+  const { persona } = await prompts({
+    type: 'select',
+    name: 'persona',
+    message: 'Choose your Persona:',
+    choices: personas.map((p) => ({ title: p, value: p })),
+  })
 
-    const nodeConfig = {
-      persona: "Prime Reflection",
-      wallet: "0xYOUR_WALLET_ADDRESS_HERE",
-      initialized_at: new Date().toISOString()
-    };
+  console.log(`🧠 Persona activated: ${persona}`)
 
-    fs.writeFileSync(configPath, JSON.stringify(nodeConfig, null, 2));
-    console.log("✅ Noēsis node initialized at:", configPath);
-  });
+  const { text } = await prompts({
+    type: 'text',
+    name: 'text',
+    message: 'What is your reflection?',
+  })
 
-program
-  .command("persona")
-  .description("Set or update your persona name")
-  .requiredOption("--name <name>", "Name of your persona")
-  .action((options: any) => {
-    if (!fs.existsSync(configPath)) {
-      console.error("❌ Node not initialized. Run 'noesis init' first.");
-      process.exit(1);
-    }
+  if (!text || text.trim().length === 0) {
+    console.log('❌ No reflection entered. Aborting.')
+    return
+  }
 
-    const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-    config.persona = options.name;
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  // Save to local file
+  const filename = `reflection-${randomUUID().slice(0, 8)}.txt`
+  writeFileSync(filename, text)
 
-    console.log(`✅ Persona updated to: ${options.name}`);
-  });
+  // Upload using w3 CLI
+  console.log('📦 Uploading to IPFS using w3 CLI...')
+  const result = execSync(`w3 up ${filename}`).toString()
+  const cidMatch = result.match(/baf\w+/)
+  const cid = cidMatch ? cidMatch[0] : null
 
-program
-  .command("reflect")
-  .description("Write a new reflection")
-  .action(() => {
-    if (!fs.existsSync(configPath)) {
-      console.error("❌ Node not initialized. Run 'noesis init' first.");
-      process.exit(1);
-    }
+  if (!cid) {
+    console.log('❌ Upload failed.')
+    return
+  }
 
-    if (!fs.existsSync(tracesDir)) {
-      fs.mkdirSync(tracesDir);
-    }
+  console.log(`✅ Uploaded to IPFS with CID: ${cid}`)
 
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout
-    });
+  // Submit to Ethereum
+  const contractAddress = process.env.CONTRACT_ADDRESS
+  const abi = [
+    'function propose(string memory _text) public',
+    'event ProposalCreated(address indexed proposer, string text)',
+  ]
+  const ALCHEMY_KEY = process.env.ALCHEMY_API_KEY
+  const PRIVATE_KEY = process.env.PRIVATE_KEY
+  
+  if (!ALCHEMY_KEY || !PRIVATE_KEY) {
+    throw new Error('❌ Missing ALCHEMY_API_KEY or PRIVATE_KEY in .env')
+  }
+  
+  const provider = new ethers.JsonRpcProvider(`https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}`)  
+  const wallet = new ethers.Wallet(PRIVATE_KEY, provider)
+  const contract = new ethers.Contract(contractAddress!, abi, wallet)
 
-    rl.question("🧠 Enter your reflection: ", (answer: string) => {
-      const timestamp = new Date().toISOString();
-      const filename = `reflection-${timestamp.replace(/[:.]/g, "-")}.json`;
+  console.log('📡 Submitting reflection to Ethereum...')
+  const tx = await contract.propose(text)
+  console.log('⏳ Awaiting confirmation...')
+  await tx.wait()
 
-      const reflection = {
-        timestamp,
-        persona: JSON.parse(fs.readFileSync(configPath, "utf-8")).persona,
-        content: answer
-      };
+  console.log(`✅ Reflection recorded on-chain in tx: ${tx.hash}`)
+}
 
-      const filepath = path.join(tracesDir, filename);
-      fs.writeFileSync(filepath, JSON.stringify(reflection, null, 2));
-
-      console.log("✅ Reflection saved to:", filepath);
-      rl.close();
-    });
-  });
-
-program
-  .command("show")
-  .description("Display current node status")
-  .action(() => {
-    if (!fs.existsSync(configPath)) {
-      console.error("❌ Node not initialized. Run 'noesis init' first.");
-      process.exit(1);
-    }
-
-    const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-    const files = fs.existsSync(tracesDir) ? fs.readdirSync(tracesDir).filter((f: string) => f.endsWith(".json")) : [];
-    const reflectionCount = files.length;
-    const latest = reflectionCount > 0 ? files.sort().slice(-1)[0] : null;
-
-    console.log("\n🧬 Noēsis Node Status");
-    console.log("Persona:", config.persona);
-    console.log("Wallet:", config.wallet);
-    console.log("Initialized:", config.initialized_at);
-    console.log("Reflections:", reflectionCount);
-    if (latest) {
-      console.log("Latest Reflection:", latest.replace("reflection-", "").replace(".json", ""));
-    }
-    console.log();
-  });
-
-program
-  .command("share")
-  .description("Upload a reflection to IPFS")
-  .requiredOption("--file <filename>", "Path to the reflection file to upload")
-  .action((options: any) => {
-    const filePath = path.join(tracesDir, options.file);
-
-    if (!fs.existsSync(filePath)) {
-      console.error("❌ File not found:", filePath);
-      process.exit(1);
-    }
-
-    console.log("🚀 Uploading to IPFS...");
-    exec(`ipfs add "${filePath}"`, (error: any, stdout: any, stderr: any) => {
-      if (error) {
-        console.error("❌ IPFS upload failed:", error.message);
-        return;
-      }
-      if (stderr) {
-        console.error("❌ IPFS stderr:", stderr);
-        return;
-      }
-
-      const lines = stdout.trim().split("\n");
-      const lastLine = lines[lines.length - 1];
-      const [_, cid] = lastLine.split(" ");
-      console.log(`✅ Uploaded! IPFS CID: ${cid}`);
-    });
-  });
-
-program
-  .command("propose")
-  .description("Submit a swarm proposal to the governance contract")
-  .requiredOption("--text <text>", "Proposal text")
-  .action(async (options: any) => {
-    const text = options.text;
-
-    const contractAddress = "0x5b8Df9F91d86FB4054b78ed2026500792B539822";
-    const abi = [
-      "function propose(string memory _text) public",
-      "event ProposalCreated(address indexed proposer, string text)"
-    ];
-
-    const provider = new ethers.JsonRpcProvider(`https://sepolia.infura.io/v3/${process.env.INFURA_KEY}`);
-    const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-    const contract = new ethers.Contract(contractAddress, abi, wallet);
-
-    console.log("📡 Submitting proposal...");
-    const tx = await contract.propose(text);
-    console.log("⏳ Waiting for confirmation...");
-    await tx.wait();
-
-    console.log(`✅ Proposal submitted in tx: ${tx.hash}`);
-  });
-
-program
-  .command("sync")
-  .description("Upload a reflection and sync its IPFS hash to the swarm")
-  .requiredOption("--file <filename>", "Local reflection file to sync")
-  .action((options: any) => {
-    const filePath = path.join(tracesDir, options.file);
-    if (!fs.existsSync(filePath)) {
-      console.error("❌ File not found:", filePath);
-      process.exit(1);
-    }
-
-    console.log("📤 Uploading reflection to IPFS...");
-    exec(`ipfs add "${filePath}"`, async (error: any, stdout: any, stderr: any) => {
-      if (error) {
-        console.error("❌ IPFS upload failed:", error.message);
-        return;
-      }
-      if (stderr) {
-        console.error("❌ IPFS stderr:", stderr);
-        return;
-      }
-
-      const lines = stdout.trim().split("\n");
-      const lastLine = lines[lines.length - 1];
-      const [_, cid] = lastLine.split(" ");
-      console.log(`✅ Uploaded to IPFS. CID: ${cid}`);
-
-      const contractAddress = "0x5b8Df9F91d86FB4054b78ed2026500792B539822";
-      const abi = [
-        "function propose(string memory _text) public",
-        "event ProposalCreated(address indexed proposer, string text)"
-      ];
-
-      const provider = new ethers.JsonRpcProvider(`https://sepolia.infura.io/v3/${process.env.INFURA_KEY}`);
-      const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-      const contract = new ethers.Contract(contractAddress, abi, wallet);
-
-      const proposalText = `Reflection IPFS: ${cid}`;
-      console.log("📡 Submitting swarm proposal...");
-      const tx = await contract.propose(proposalText);
-      console.log("⏳ Waiting for confirmation...");
-      await tx.wait();
-
-      console.log(`✅ Synced to swarm in tx: ${tx.hash}`);
-    });
-  });
-
-program.parse();
+main().catch((err) => {
+  console.error('🔥 CLI error:', err)
+})

@@ -1,11 +1,15 @@
 [
   {
+    "anonymous": false,
     "inputs": [
-      { "internalType": "string", "name": "ipfsHash", "type": "string" }
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "text",
+        "type": "string"
+      }
     ],
-    "name": "submitReflection",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
+    "name": "ReflectionSubmitted",
+    "type": "event"
   }
 ]

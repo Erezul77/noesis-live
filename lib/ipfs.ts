@@ -1,25 +1,23 @@
 // lib/ipfs.ts
-import { create } from '@web3-storage/w3up-client'
-import { File } from '@web3-storage/w3up-client/file'
+// @ts-ignore
+import * as W3 from '@web3-storage/w3up-client'
+import { File } from '@web-std/file'
 
 console.log('⚙️ Initializing w3up client...')
 
-const client = await create()
+// Initialize client
+const client = await W3.create()
 
-const SPACE_DID = process.env.WEB3_STORAGE_SPACE_DID as string
-const EMAIL = process.env.WEB3_STORAGE_EMAIL as string
+// Restore identity (DID) and select space
+await client.login(`mailto:${process.env.WEB3_STORAGE_EMAIL!}` as `${string}@${string}`)
+await client.setCurrentSpace(process.env.WEB3_STORAGE_SPACE_DID! as `did:${string}:${string}`)
 
-await client.login(EMAIL)
-await client.setCurrentSpace(SPACE_DID)
-
+/**
+ * Uploads a reflection text to Web3.Storage via W3UP client.
+ */
 export async function storeReflectionToIPFS(text: string): Promise<string> {
-  console.log('📨 Received reflection:', text)
-
-  const file = new File([new TextEncoder().encode(text)], 'reflection.txt', {
-    type: 'text/plain',
-  })
-
+  const file = new File([text], 'reflection.txt', { type: 'text/plain' })
   const cid = await client.uploadFile(file)
-  console.log('✅ Pinned to IPFS with CID:', cid)
+  console.log('✅ Uploaded to IPFS with CID:', cid.toString())
   return cid.toString()
 }

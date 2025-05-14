@@ -1,34 +1,67 @@
 'use client'
 
-import { useReflections } from '@/hooks/useReflections'
+import { useEffect, useState } from 'react'
+import { Alchemy, Network } from 'alchemy-sdk'
 import { formatDistanceToNow } from 'date-fns'
 
+const config = {
+  apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY!,
+  network: Network.ETH_SEPOLIA,
+}
+const alchemy = new Alchemy(config)
+
 export default function FeedPage() {
-  const { reflections, loading } = useReflections()
+  const [reflections, setReflections] = useState<{ uri: string; timestamp: number }[]>([])
+
+  async function fetchReflections() {
+    const events = await alchemy.core.getLogs({
+      address: process.env.NEXT_PUBLIC_REFLECTION_VAULT_CONTRACT!,
+      fromBlock: '0x0',
+      toBlock: 'latest',
+      topics: [
+        // keccak256("ReflectionSubmitted(address,string,uint256)")
+        '0xb4a44d318e74fda4bba738adceef3c3f0aef68e9dd9a0d1c07d8234c9d7b3cf2',
+      ],
+    })
+
+    const parsed = events.map((e) => {
+      const data = e.data
+      const cidHex = '0x' + data.slice(130, 130 + 90).replace(/0+$/, '')
+      const cid = Buffer.from(cidHex.slice(2), 'hex').toString('utf8')
+      const uri = `https://${cid}.ipfs.w3s.link/reflection.txt`
+
+      const timestampHex = data.slice(-64)
+      const timestamp = parseInt(timestampHex, 16) * 1000
+
+      return { uri, timestamp }
+    })
+
+    setReflections(parsed.reverse())
+  }
+
+  useEffect(() => {
+    fetchReflections()
+    const interval = setInterval(fetchReflections, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   return (
-    <div className="min-h-screen px-6 py-12 bg-black text-white">
-      <h1 className="text-3xl font-bold mb-8 text-center">🌀 Collective Reflections</h1>
-
-      {loading ? (
-        <div className="text-center mt-20 animate-pulse text-gray-400">⏳ Loading reflections from chain...</div>
-      ) : reflections.length === 0 ? (
-        <div className="text-center mt-20 text-gray-500">No reflections found yet. Be the first to reflect!</div>
-      ) : (
-        <ul className="space-y-6 max-w-3xl mx-auto">
-          {reflections.map((r, idx) => (
-            <li
-              key={idx}
-              className="bg-zinc-900/60 backdrop-blur p-6 rounded-xl border border-white/10 shadow-md"
-            >
-              <div className="text-gray-300 mb-2 text-sm">
-                {formatDistanceToNow(new Date(r.timestamp * 1000), { addSuffix: true })}
-              </div>
-              <div className="text-lg leading-relaxed text-white whitespace-pre-wrap">{r.text}</div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <main className="min-h-screen bg-white text-black p-8">
+      <h1 className="text-3xl font-bold mb-6 text-center">Reflections</h1>
+      <div className="space-y-6 max-w-3xl mx-auto">
+        {reflections.map((r, idx) => (
+          <div key={idx} className="border border-gray-300 p-4 rounded-xl shadow-sm">
+            <p className="text-gray-600 text-sm mb-2">
+              {formatDistanceToNow(new Date(r.timestamp))} ago
+            </p>
+            <iframe
+              src={r.uri}
+              className="w-full h-24 bg-gray-50 rounded text-sm p-2"
+              sandbox=""
+            />
+          </div>
+        ))}
+      </div>
+    </main>
   )
 }
