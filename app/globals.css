@@ -10,7 +10,6 @@ html, body {
   color: #000000;
 }
 
-/* Remove any white orb animations */
 .animate-pulse {
   animation: pulse 2s infinite;
 }
