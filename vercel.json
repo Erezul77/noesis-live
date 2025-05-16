@@ -1,0 +1,6 @@
+{
+  "buildCommand": "npm run build && npx next export",
+  "outputDirectory": "out",
+  "ignoreCommand": "echo 'skipping ignore'",
+  "cleanUrls": true
+}
