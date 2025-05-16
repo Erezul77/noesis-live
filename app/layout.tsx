@@ -1,18 +1,24 @@
 import './globals.css'
-import { ReactNode } from 'react'
-import OctopusCreature from '@/components/OctopusCreature'
+import { Inter } from 'next/font/google'
+
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
   title: 'Noēsis',
-  description: 'Decentralized Swarm Intelligence',
+  description: 'Reflect. Connect. Evolve.',
 }
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="relative overflow-x-hidden min-h-screen bg-white text-black">
+      <head />
+      <body className={`${inter.className} bg-white text-black`}>
         {children}
-        <OctopusCreature />
+
+        {/* 🐙 Zen Octopus Floating at Bottom Right */}
+        <div className="fixed bottom-4 right-4 opacity-80">
+          <img src="/zen-octopus.png" alt="Zen Octopus" className="w-20 animate-pulse" />
+        </div>
       </body>
     </html>
   )
