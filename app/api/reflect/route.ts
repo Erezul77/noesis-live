@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { Contract, Wallet, providers } from 'ethers'
+import { Contract, Wallet, JsonRpcProvider } from 'ethers'
 import * as W3 from '@web3-storage/w3up-client'
 
 export async function POST(req: Request) {
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   const cid = await client.uploadFile(file)
   const url = `https://${cid}.ipfs.w3s.link/reflection.txt`
 
-  const provider = new providers.JsonRpcProvider(
+  const provider = new JsonRpcProvider(
     `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`
   )
   const wallet = new Wallet(process.env.PRIVATE_KEY!, provider)

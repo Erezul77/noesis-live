@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { submitReflection } from '@/lib/submit'
+import { submitReflection } from '../../lib/submit'
 import { Loader2 } from 'lucide-react'
 
 export default function ReflectPage() {

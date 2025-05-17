@@ -1,14 +1,47 @@
+import { Interface, LogDescription, BrowserProvider, Contract, id } from 'ethers'
 import { useEffect, useState } from 'react'
 import { Alchemy, Network } from 'alchemy-sdk'
-import { ethers } from 'ethers'
+import * as W3 from '@web3-storage/w3up-client'
+import { File } from '@web-std/file'
+
+// ✅ Declare MetaMask support on the Window type
+declare global {
+  interface Window {
+    ethereum?: any
+  }
+}
 
 const VAULT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '0x437c332495a8ef52e00ca721f9cF26Dc81B0aC3D'
 const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || ''
+const WEB3_STORAGE_EMAIL = process.env.WEB3_STORAGE_EMAIL ?? 'erezsnz@gmail.com'
+const WEB3_STORAGE_SPACE_DID = process.env.WEB3_STORAGE_SPACE_DID! // DID string
+const ABI = [
+  'function submitReflection(string text) public',
+  'event ReflectionSubmitted(address sender, string cid, uint256 timestamp)',
+]
+
 const config = {
   apiKey: ALCHEMY_KEY,
   network: Network.ETH_SEPOLIA,
 }
 const alchemy = new Alchemy(config)
+
+export async function submitReflection(text: string) {
+  const client = await W3.create()
+  const space = await client.login(WEB3_STORAGE_EMAIL as `${string}@${string}`)
+  await client.setCurrentSpace(space.did())
+
+  const file = new File([text], 'reflection.txt', { type: 'text/plain' })
+  const cid = await client.uploadFile(file)
+
+  if (!window.ethereum) throw new Error('MetaMask not found')
+  const provider = new BrowserProvider(window.ethereum)
+  const signer = await provider.getSigner()
+  const contract = new Contract(VAULT_ADDRESS, ABI, signer)
+  const tx = await contract.submitReflection(cid.toString())
+  await tx.wait()
+  return tx.hash
+}
 
 export function useReflections() {
   const [reflections, setReflections] = useState<any[]>([])
@@ -18,10 +51,10 @@ export function useReflections() {
     try {
       setLoading(true)
 
-      const iface = new ethers.utils.Interface([
+      const iface = new Interface([
         'event ReflectionSubmitted(address sender, string cid, uint256 timestamp)',
       ])
-      const eventTopic = iface.getEventTopic('ReflectionSubmitted')
+      const eventTopic = id('ReflectionSubmitted(address,string,uint256)')
 
       const currentBlock = await alchemy.core.getBlockNumber()
       const fromBlock = currentBlock - 1000
@@ -34,7 +67,8 @@ export function useReflections() {
       })
 
       const parsed = logs.map((log) => {
-        const { args } = iface.parseLog(log)
+        const parsedLog = iface.parseLog(log) as LogDescription
+        const { args } = parsedLog
         return {
           address: args.sender,
           cid: args.cid,
