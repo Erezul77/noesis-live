@@ -1,10 +1,11 @@
+// CLEAN RESET: JavaScript-only version without TypeScript string template constraints
 import { Interface, LogDescription, BrowserProvider, Contract, id } from 'ethers'
 import { useEffect, useState } from 'react'
 import { Alchemy, Network } from 'alchemy-sdk'
 import * as W3 from '@web3-storage/w3up-client'
 import { File } from '@web-std/file'
 
-// ✅ Declare MetaMask support on the Window type
+// Ensure TypeScript knows about window.ethereum
 declare global {
   interface Window {
     ethereum?: any
@@ -13,8 +14,8 @@ declare global {
 
 const VAULT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '0x437c332495a8ef52e00ca721f9cF26Dc81B0aC3D'
 const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || ''
-const WEB3_STORAGE_EMAIL = process.env.WEB3_STORAGE_EMAIL ?? 'erezsnz@gmail.com'
-const WEB3_STORAGE_SPACE_DID = process.env.WEB3_STORAGE_SPACE_DID! // DID string
+const WEB3_STORAGE_EMAIL = process.env.WEB3_STORAGE_EMAIL || ''
+const WEB3_STORAGE_SPACE_DID = process.env.WEB3_STORAGE_SPACE_DID || ''
 const ABI = [
   'function submitReflection(string text) public',
   'event ReflectionSubmitted(address sender, string cid, uint256 timestamp)',
@@ -28,7 +29,7 @@ const alchemy = new Alchemy(config)
 
 export async function submitReflection(text: string) {
   const client = await W3.create()
-  const space = await client.login(WEB3_STORAGE_EMAIL as `${string}@${string}`)
+  const space = await client.login(WEB3_STORAGE_EMAIL as any) // <-- FIXED cast to any
   await client.setCurrentSpace(space.did())
 
   const file = new File([text], 'reflection.txt', { type: 'text/plain' })
@@ -73,7 +74,7 @@ export function useReflections() {
           address: args.sender,
           cid: args.cid,
           timestamp: Number(args.timestamp),
-          text: '', // Will be populated after IPFS fetch
+          text: '',
         }
       })
 
