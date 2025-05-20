@@ -1,10 +1,10 @@
+// feed.ts — final production version for Vercel deployment
 import { Interface, LogDescription, BrowserProvider, Contract, id } from 'ethers'
 import { useEffect, useState } from 'react'
 import { Alchemy, Network } from 'alchemy-sdk'
 import * as W3 from '@web3-storage/w3up-client'
 import { File } from '@web-std/file'
 
-// Ensure TypeScript knows about window.ethereum
 declare global {
   interface Window {
     ethereum?: any
@@ -14,7 +14,6 @@ declare global {
 const VAULT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '0x437c332495a8ef52e00ca721f9cF26Dc81B0aC3D'
 const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || ''
 
-// Strict email validation for Web3.Storage
 const rawEmail = process.env.WEB3_STORAGE_EMAIL || ''
 if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail)) {
   throw new Error('Invalid WEB3_STORAGE_EMAIL format')
@@ -82,14 +81,6 @@ export function useReflections() {
 
       const parsed = logs.map((log) => {
         const parsedLog = iface.parseLog(log)
-        if (!parsedLog) {
-          return {
-            address: '',
-            cid: '',
-            timestamp: 0,
-            text: '[Error parsing log]',
-          }
-        }
         const args = parsedLog.args as unknown as readonly [string, string, bigint]
         const [sender, cid, timestamp] = args
 
