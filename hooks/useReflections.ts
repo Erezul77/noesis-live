@@ -1,4 +1,3 @@
-// CLEAN RESET: JavaScript-only version without TypeScript string template constraints
 import { Interface, LogDescription, BrowserProvider, Contract, id } from 'ethers'
 import { useEffect, useState } from 'react'
 import { Alchemy, Network } from 'alchemy-sdk'
@@ -14,7 +13,14 @@ declare global {
 
 const VAULT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '0x437c332495a8ef52e00ca721f9cF26Dc81B0aC3D'
 const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || ''
-const WEB3_STORAGE_EMAIL = process.env.WEB3_STORAGE_EMAIL || ''
+
+// Strict email validation for Web3.Storage
+const rawEmail = process.env.WEB3_STORAGE_EMAIL || ''
+if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail)) {
+  throw new Error('Invalid WEB3_STORAGE_EMAIL format')
+}
+const WEB3_STORAGE_EMAIL = rawEmail as `${string}@${string}`
+
 const WEB3_STORAGE_SPACE_DID = process.env.WEB3_STORAGE_SPACE_DID || ''
 const ABI = [
   'function submitReflection(string text) public',
@@ -27,9 +33,16 @@ const config = {
 }
 const alchemy = new Alchemy(config)
 
+interface Reflection {
+  address: string
+  cid: string
+  timestamp: number
+  text: string
+}
+
 export async function submitReflection(text: string) {
   const client = await W3.create()
-  const space = await client.login(WEB3_STORAGE_EMAIL as any) // <-- FIXED cast to any
+  const space = await client.login(WEB3_STORAGE_EMAIL)
   await client.setCurrentSpace(space.did())
 
   const file = new File([text], 'reflection.txt', { type: 'text/plain' })
@@ -45,7 +58,7 @@ export async function submitReflection(text: string) {
 }
 
 export function useReflections() {
-  const [reflections, setReflections] = useState<any[]>([])
+  const [reflections, setReflections] = useState<Reflection[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchReflections = async () => {
@@ -58,7 +71,7 @@ export function useReflections() {
       const eventTopic = id('ReflectionSubmitted(address,string,uint256)')
 
       const currentBlock = await alchemy.core.getBlockNumber()
-      const fromBlock = currentBlock - 1000
+      const fromBlock = Math.max(0, currentBlock - 1000)
 
       const logs = await alchemy.core.getLogs({
         fromBlock,
@@ -68,12 +81,22 @@ export function useReflections() {
       })
 
       const parsed = logs.map((log) => {
-        const parsedLog = iface.parseLog(log) as LogDescription
-        const { args } = parsedLog
+        const parsedLog = iface.parseLog(log)
+        if (!parsedLog) {
+          return {
+            address: '',
+            cid: '',
+            timestamp: 0,
+            text: '[Error parsing log]',
+          }
+        }
+        const args = parsedLog.args as unknown as readonly [string, string, bigint]
+        const [sender, cid, timestamp] = args
+
         return {
-          address: args.sender,
-          cid: args.cid,
-          timestamp: Number(args.timestamp),
+          address: sender,
+          cid,
+          timestamp: Number(timestamp),
           text: '',
         }
       })
