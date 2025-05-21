@@ -1,9 +1,9 @@
 {
   "scripts": {
-  "dev": "next dev",
-  "build": "next build",
-  "export": "echo 'export not needed'"
-}
+    "dev": "next dev",
+    "build": "next build",
+    "deploy": "npm run build && npm run export"
+  },
   "dependencies": {
     "alchemy-sdk": "^3.5.9",
     "ethers": "^6.14.1",
