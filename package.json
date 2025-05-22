@@ -1,15 +1,15 @@
-{
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "deploy": "npm run build && npm run export"
-  },
+{"scripts": {
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start"
+}
+ ,
   "dependencies": {
     "alchemy-sdk": "^3.5.9",
     "ethers": "^6.14.1",
     "framer-motion": "^12.12.1",
     "lucide-react": "^0.511.0",
-    "next": "^14.2.3",
+    "next": "^14.2.29",
     "postcss": "^8.5.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.7",
-    "@types/react": "19.1.5",
+    "@types/react": "^19.1.5",
     "autoprefixer": "^10.4.21"
   }
 }
