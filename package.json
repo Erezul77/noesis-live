@@ -1,9 +1,9 @@
-{"scripts": {
-  "dev": "next dev",
-  "build": "next build",
-  "start": "next start"
-}
- ,
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
   "dependencies": {
     "alchemy-sdk": "^3.5.9",
     "ethers": "^6.14.1",

@@ -7,3 +7,4 @@ dist/
 cli/.env
 contracts/.env
 .env.local
+.vercel
