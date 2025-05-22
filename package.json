@@ -1,9 +1,8 @@
 {
   "scripts": {
-"dev": "next dev",
-"build": "next build",
-"start": "next start",
-"deploy": "next build"
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start"
 },
   "dependencies": {
     "alchemy-sdk": "^3.5.9",
