@@ -1,24 +1,25 @@
+// app/layout.tsx
 import './globals.css'
-import { Inter } from 'next/font/google'
-
-const inter = Inter({ subsets: ['latin'] })
+import Link from 'next/link'
 
 export const metadata = {
-  title: 'Noesis',
-  description: 'Reflect. Connect. Evolve.',
+  title: 'Noēsis',
+  description: 'Recursive Collective Intelligence',
 }
 
-import { ReactNode } from 'react'
-
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head />
-      <body className={`${inter.className} bg-white text-black`}>
-        {children}
-        <div className="fixed bottom-4 right-4 opacity-80">
-          <img src="/zen-octopus.png" alt="Zen Octopus" className="w-20 animate-pulse" />
-        </div>
+      <body className="bg-black text-white min-h-screen">
+        <nav className="w-full p-4 border-b border-gray-700 flex justify-center space-x-6 text-sm font-semibold text-gray-300">
+          <Link href="/" className="hover:text-white">Home</Link>
+          <Link href="/reflect" className="hover:text-white">Reflect</Link>
+          <Link href="/feed" className="hover:text-white">Feed</Link>
+          <Link href="/swarm" className="hover:text-white">Swarm</Link>
+          <Link href="/constitution" className="hover:text-white">Constitution</Link>
+          <Link href="/about" className="hover:text-white">About</Link>
+        </nav>
+        <main className="max-w-3xl mx-auto px-6 py-10">{children}</main>
       </body>
     </html>
   )
