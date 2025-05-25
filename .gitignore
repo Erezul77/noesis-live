@@ -1,0 +1,10 @@
+node_modules/
+.next/
+out/
+dist/
+.cache/
+.env
+cli/.env
+contracts/.env
+.env.local
+.vercel
